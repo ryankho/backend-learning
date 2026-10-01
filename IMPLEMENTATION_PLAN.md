@@ -1,180 +1,349 @@
-# 2-Week Backend Development Implementation Plan
+# Vibe-Coding Backend Plan — 4 Weeks
 
-*As of 2026-09-24 · Ryan Kho*
+*Ryan Kho · Python + FastAPI · Claude Code · ~3–4 h/day · started Oct 2026*
 
-## Goal and honest expectations
+## North star
 
-In 14 days you will not "master" backend development — nobody does. What you *can* reach is **independent competence**: design, build, test and deploy a real REST API with a database, authentication and a public URL, using AI as a fast pair-programmer rather than a crutch. That is the level of a solid intern or junior developer, and it is enough to build hackathon backends and side projects on your own.
+Build real backends by **vibe coding with Claude Code**, while thinking like the engineer who is accountable for them.
 
-The plan assumes about **6–8 hours per day**, alongside or outside semester load. If you only have 3–4 hours a day, stretch it to 4 weeks with the same order; do not skip days.
+I don't memorize syntax or master every tool. I want to:
 
-By Day 14 you should be able to do all of these without copying a tutorial:
+1. **Ship.** Go from an idea to a deployed, working backend fast, with Claude Code writing most of the code.
+2. **Judge.** Own the decisions AI won't make for me: requirements, architecture, restrictions, concurrency, robustness, maintainability.
+3. **Navigate.** Know which tools and concepts exist (RAG, MCP, n8n, queues, …), what problem each one solves, and when to reach for it, without deep-diving until a project needs it.
 
-- Explain what happens between a browser click and a database row being saved
-- Design a database schema and REST endpoints for a new idea on paper in 30 minutes
-- Build CRUD endpoints with validation, error handling and pagination
-- Add signup/login with hashed passwords and JWT tokens, plus per-user permissions
-- Write automated tests and run them in CI
-- Package the app in Docker and deploy it to a public URL
-- Read AI-generated code, spot what is wrong, and fix it
+**Principle:** I own the *what, why and when*. Claude Code handles the *how*. I verify everything before it ships.
 
-## Tech stack and setup
+---
 
-Use **Python + FastAPI + PostgreSQL**. You already write Python for your AI courses, FastAPI is the standard for serving ML models, it generates interactive API docs automatically, and its type hints make AI-generated code easier to check. The concepts (HTTP, SQL, auth, testing, Docker) transfer 1:1 to Node/Express, Go or Java later.
+## Depth levels
 
-| Layer | Tool | Why this one |
+Not everything deserves the same depth. Each concept in this plan is tagged with one of three levels:
+
+| Level | Meaning | Proof I've got it |
 | --- | --- | --- |
-| Language | Python 3.12+ | Already familiar; dominant in AI |
-| Web framework | FastAPI | Async, typed, auto docs at `/docs` |
-| Validation | Pydantic v2 | Request/response schemas |
-| Database | PostgreSQL 16 | Industry default relational DB |
-| ORM + migrations | SQLAlchemy 2.0 + Alembic | Most common Python data layer |
-| Auth | passlib/bcrypt + PyJWT | Password hashing and tokens |
-| Testing | pytest + httpx TestClient | Standard Python testing |
-| Cache / queue | Redis | Caching, rate limiting, background jobs |
-| Packaging | Docker + Docker Compose | Same environment everywhere |
-| Deploy | Render, Railway or Fly.io | Free/cheap tier, deploys from GitHub |
-| API client | Bruno, Postman or `curl` | Manually hit endpoints |
+| **Aware** | I know it exists, what it's for, and when I'd pick it | A concept card in `concepts/` |
+| **Apply** | I've used it in a project with AI and can explain the design | It runs in one of my projects, and I can explain why it's there |
+| **Deep** | I can spot when AI gets it wrong | I've broken it on purpose and fixed it myself |
 
-**Day 0 setup checklist (evening before Day 1, ~2 hours):**
+**Deep is reserved for three areas:** concurrency, security and data modelling. In these areas AI code looks right, passes simple tests, and fails under real load or real attackers.
 
-- [x] Install Python 3.12+, VS Code (Python + Ruff extensions), Git
-- [x] Install Docker Desktop (enable WSL2 on Windows) and confirm `docker run hello-world` works
-- [x] Create a GitHub repo `backend-14days`; one folder per day
-- [x] Install an API client (Bruno or Postman)
-- [x] Set up your AI assistant in the editor (Claude Code, Copilot or similar) — but read the AI rules below first
+---
 
-## Rules for learning with AI
+## The project loop
 
-The goal is to be the **architect and reviewer**, with AI as the typist. Juniors who let AI drive end up with backends they cannot debug. These five rules prevent that.
-
-1. **Morning = no AI code generation.** Learn the day's concept by reading docs and typing examples yourself. Ask AI only to *explain* (e.g. "why does this return 422?"), never to write.
-2. **Afternoon = AI as pair-programmer.** Describe the design first (endpoint, schema, expected behaviour), then let AI draft. You must be able to explain every line before you commit it.
-3. **Spec before prompt.** Write a 5-line spec in a comment: inputs, outputs, errors, edge cases. Paste that as the prompt. Vague prompts produce plausible-looking wrong code.
-4. **Verify, do not trust.** Run it, test it, and ask AI "what are the security problems in this code?" Common AI mistakes in backends: SQL built with f-strings, missing auth checks on update/delete, secrets hard-coded, N+1 queries, no input limits.
-5. **Break it on purpose.** Once a day, delete or change something and predict the error before running. This builds the debugging instinct that AI cannot give you.
-
-**Good prompt pattern:** "I'm building `POST /tasks` in FastAPI with SQLAlchemy 2.0. Schema: … Rules: only the owner can create tasks in their project; return 404 if the project doesn't exist or isn't theirs. Write the route and a pytest for the forbidden case. Explain any design choice you make."
-
-## Week 1 — Fundamentals
-
-Week 1 builds one small project, a **Notes API**, layer by layer. Each day ends with a working commit and a deliverable you can demo.
-
-| Day | Topic | Learn (morning, no AI codegen) | Build (afternoon, AI allowed) | Done when |
-| --- | --- | --- | --- | --- |
-| 1 | How the web works + Git | Client/server, DNS, TCP vs HTTP, request/response anatomy, methods, status codes, headers, JSON. Terminal basics, Git commit/branch/push | Use `curl` and your API client against a public API (e.g. GitHub API). Write a raw Python `http.server` that returns JSON | You can explain every line of a raw HTTP request and response |
-| 2 | First API with FastAPI | Routing, path vs query params, request body, Pydantic models, status codes, auto docs at `/docs` | Notes API with in-memory list: `GET/POST/PUT/DELETE /notes` | All 5 CRUD endpoints work in `/docs`, correct status codes (201, 404, 422) |
-| 3 | REST design + project structure | Resource naming, idempotency, PUT vs PATCH, pagination, filtering, error response format; routers, schemas, services layout | Refactor into `routers/`, `schemas/`, `services/`; add pagination + search; consistent error JSON | You can design endpoints for a new idea on paper before coding |
-| 4 | SQL and databases | Tables, primary/foreign keys, one-to-many, many-to-many, `SELECT/JOIN/GROUP BY`, indexes, normalization, transactions (ACID) | Run Postgres in Docker; write raw SQL for a users–notes–tags schema; solve 20 SQL exercises | You can write a 3-table JOIN by hand and explain why an index helps |
-| 5 | ORM + migrations | SQLAlchemy 2.0 models, sessions, relationships, dependency injection (`Depends`), Alembic migrations, SQL injection and why ORMs/params prevent it | Replace the in-memory list with Postgres; first Alembic migration; add tags (many-to-many) | Data survives a restart; migration history is clean |
-| 6 | Authentication + authorization | Hashing vs encryption, bcrypt, sessions vs JWT, access/refresh tokens, OAuth2 password flow, CORS, authN vs authZ | Signup/login, `get_current_user` dependency, each user sees only their own notes | Another user's note returns 404; passwords never stored in plain text |
-| 7 | Testing + review day | pytest, fixtures, test database, unit vs integration tests, arrange-act-assert | Write 15+ tests (happy paths, auth failures, validation). Ask AI to review the whole repo for bugs and security issues, then fix them yourself | `pytest` green; you can explain every fix |
-
-**Week 1 checkpoint (end of Day 7):** without notes, draw the request flow of `POST /notes` from client → router → dependency (auth) → service → ORM → Postgres → response. If you can't, repeat the weak day on Day 8 morning.
-
-## Week 2 — Production skills and the capstone
-
-Week 2 starts a **fresh capstone repo** (spec below) so you prove you can build from zero. Mornings still cover one new concept; afternoons apply it to the capstone.
-
-| Day | Topic | Learn (morning) | Build on capstone (afternoon) | Done when |
-| --- | --- | --- | --- | --- |
-| 8 | System design on paper | Requirements → entities → ERD → endpoint list; stateless servers; how a real system looks (load balancer, app servers, DB, cache) | Write the capstone design doc: ERD, endpoint table, auth rules. Ask AI to critique it, then decide yourself | Design doc committed before any code |
-| 9 | Scaffold from scratch | Config via env vars (`pydantic-settings`), `.env` vs secrets, logging, structured errors | Project skeleton, Docker Compose (API + Postgres), models, migrations, auth — with AI drafting, you reviewing | `docker compose up` runs the whole stack |
-| 10 | Core business logic | Transactions, race conditions, soft deletes, role-based access (owner/member), N+1 queries and `selectinload` | All core CRUD + permission rules + pagination/filtering | Every endpoint in the design doc exists and is tested |
-| 11 | Performance + async work | Redis caching, rate limiting, background tasks (FastAPI `BackgroundTasks` or a worker), async I/O basics, query `EXPLAIN` | Cache a hot read endpoint, rate-limit login, send a background "email" (log it) on invite | You can show a before/after timing for the cached endpoint |
-| 12 | Security + files + integrations | OWASP API Top 10, input limits, CORS, secrets handling; calling a 3rd-party API; file uploads | Run a security pass (checklist + AI review); add file upload or one external API call; optional: an endpoint that calls an LLM API | No secrets in Git; broken-auth tests pass |
-| 13 | Deploy + CI/CD | Dockerfile best practices, environment config, GitHub Actions, health checks, logs in production, managed Postgres | GitHub Actions runs tests on push; deploy to Render/Railway/Fly.io with managed Postgres | Public URL works; a failing test blocks deploy |
-| 14 | Polish + solo build test | Writing a README, API docs, reading your own logs | Morning: finish README + demo. Afternoon: **solo test** — build a brand-new mini API (e.g. URL shortener) in 3 hours with AI, from spec to deploy | Capstone live + mini API built in ≤ 3 h |
-
-If you fall behind, cut Day 11's Redis work and Day 12's integrations first. Never cut testing, auth or deployment.
-
-## Capstone: Team Task Manager API
-
-The capstone is a **multi-user team task manager** (like a mini Trello/Asana backend). It is small enough for 6 days but forces every core skill: relations, permissions, auth, caching and deployment.
+Every project follows the same five-step loop:
 
 ```mermaid
 flowchart LR
-  C[Client / Swagger UI] --> A[FastAPI app]
-  A --> AU[Auth: JWT]
-  A --> S[Services]
-  S --> DB[(PostgreSQL)]
-  S --> R[(Redis cache)]
-  S --> W[Background tasks]
+  A[1. Spec] --> B[2. Plan with Claude]
+  B --> C[3. Vibe code]
+  C --> D[4. Break and review]
+  D --> E[5. Concept card and log]
+  E -.next feature.-> A
 ```
 
-Requests pass through JWT auth, then a service layer that owns all business rules and talks to Postgres and Redis.
+1. **Spec (me, no AI writing):** write `SPEC.md` with the goal, users, requirements, constraints, non-goals and a data model sketch. AI may critique it but not write it.
+2. **Plan (with Claude):** have Claude Code propose an architecture and a step plan in plan mode. I accept, edit or reject it before any code is written.
+3. **Vibe code:** Claude Code implements in small steps. I commit after each working slice.
+4. **Break and review:** run tests, load tests and attack scenarios, and ask Claude to review its own code against the seven lenses below. I fix what matters.
+5. **Card and log:** write or update a concept card for anything new, plus three lines in `LOG.md`.
 
-**Entities:** User, Workspace, Membership (user–workspace with role `owner` or `member`), Project, Task (title, status, priority, due date, assignee), Comment.
+### Seven engineering lenses (every project answers these in its README)
 
-**Acceptance criteria:**
+| Lens | Question I must answer |
+| --- | --- |
+| Requirements and constraints | What must it do, for whom, at what scale, cost and latency? What is explicitly out of scope? |
+| Architecture | What are the components, how do they talk, and why this shape? |
+| Restrictions | What must never happen? (e.g. a user reads another user's data, double charging) How is it enforced? |
+| Concurrency | What happens when two requests hit the same data at the same moment? |
+| Deadlocks and contention | Can anything wait on something that waits on it? Where are the locks and timeouts? |
+| Robustness | What happens when the DB, LLM or third-party API is slow, down or returns garbage? |
+| Maintainability | Could I (or a teammate) change this in three months? Structure, types, tests, docs. |
 
-- [ ] Signup, login, refresh token; passwords hashed with bcrypt
-- [ ] Owners can invite members; only owners can delete a workspace or project
-- [ ] Tasks support filter by status/assignee, sort by due date, and pagination
-- [ ] Users can never read or change data in a workspace they don't belong to (tested)
-- [ ] Workspace dashboard endpoint (task counts by status) is cached in Redis
-- [ ] Login is rate-limited (e.g. 5 attempts/minute per IP)
-- [ ] 30+ pytest tests, run in GitHub Actions on every push
-- [ ] Runs locally with one `docker compose up`
-- [ ] Deployed to a public URL with managed Postgres
-- [ ] README with setup steps, ERD, endpoint list and design decisions
+---
 
-**Stretch:** WebSocket notifications when a task is assigned, or an `/tasks/summarize` endpoint that calls an LLM API — a good bridge to your AI degree.
+## Stack (free-first)
 
-## Daily routine
-
-Each day follows the same 7-hour rhythm so the only decision is *what*, never *how*.
-
-| Block | Time | What you do |
+| Layer | Default choice | Notes |
 | --- | --- | --- |
-| Warm-up | 15 min | Explain yesterday's concept out loud or in a 5-line note, without looking |
-| Learn | 2 h | Official docs + typing examples by hand; AI only to explain |
-| Break | 30 min | Away from the screen |
-| Build | 3 h | Day's deliverable with AI as pair-programmer; commit every 30–60 min |
-| Break-it | 30 min | Introduce a bug, predict the error, fix it; read one error log fully |
-| Review | 30 min | Ask AI to review the day's diff; fix issues yourself; write a 3-line learning log in `LOG.md` |
+| Language and framework | Python 3.12 + FastAPI + Pydantic v2 | Typed, auto docs at `/docs`, best ecosystem for AI |
+| AI coding | Claude Code | `CLAUDE.md` rules, plan mode, small commits |
+| Database | PostgreSQL (local Docker, then Neon or Supabase free tier) | Supabase/Postgres also gives you **pgvector** for RAG |
+| ORM and migrations | SQLAlchemy 2.0 + Alembic | |
+| Cache and queue | Redis (local Docker or Upstash free tier) | Caching, rate limits, locks, job queue |
+| Background jobs | FastAPI `BackgroundTasks`, then ARQ or Celery | |
+| LLM | Gemini API free tier, or Ollama locally; Claude/OpenAI if credits are available | Wrap behind one interface so providers are swappable |
+| Automation | n8n (self-hosted via Docker, free) | |
+| Testing | pytest, httpx, Locust (load testing) | |
+| Observability | Structured logging + Sentry free tier | |
+| Deploy | Docker + Render free tier (or Railway/Fly.io trial) | GitHub Actions for CI |
 
-Keep `LOG.md` honest: what worked, what confused you, and one question to answer tomorrow. It becomes your revision notes and interview material.
+---
 
-## Day 14 self-assessment
+## Repo layout
 
-Tick these honestly on Day 14. Eight or more ticks means you can build a backend alone with AI; fewer means repeat the weakest days before moving on.
+```
+backend-14days/
+├── IMPLEMENTATION_PLAN.md   ← this file
+├── README.md                ← AI usage rules
+├── CLAUDE.md                ← rules Claude Code follows in this repo (created in P0)
+├── LOG.md                   ← 3 lines per session
+├── concepts/                ← one concept card per idea (rag.md, mcp.md, deadlocks.md, …)
+└── projects/
+    ├── p0-warmup/
+    ├── p1-hackathon-starter/
+    ├── p2-ticket-rush/
+    ├── p3-study-buddy-rag/
+    ├── p4-mcp-server/
+    ├── p5-n8n-automation/
+    └── p6-capstone/
+```
 
-- [ ] I can explain the difference between 401 and 403, and between PUT and PATCH
-- [ ] I can design a normalized schema with a many-to-many relation on paper
-- [ ] I can write a JOIN with GROUP BY without looking it up
-- [ ] I can explain why passwords are hashed, not encrypted, and how a JWT is verified
-- [ ] I can find and fix an N+1 query or a missing index
-- [ ] I can spot at least 3 security bugs in AI-generated backend code
-- [ ] I can write a failing test before fixing a bug
-- [ ] I can read a stack trace and locate the failing line in under 5 minutes
-- [ ] I can write a Dockerfile and Compose file from memory
-- [ ] I built the Day 14 mini API from spec to deploy in 3 hours
+---
 
-## Resources
+## Roadmap (28 sessions × 3–4 h)
 
-Stick to official docs first; they are more accurate than most tutorials and than AI on version-specific details.
+| Week | Days | Project | Theme | Main concepts (level) |
+| --- | --- | --- | --- | --- |
+| 1 | 1–2 | P0 Warm-up | Toolchain and how the web works | HTTP, REST, JSON, status codes, env vars, Git flow (Apply) |
+| 1 | 3–7 | P1 Hackathon Starter Kit | A reusable backend template | Spec/PRD, layered architecture, ORM and migrations, JWT auth, validation, Docker, pytest (Apply); data modelling (Deep) |
+| 2 | 8–12 | P2 Ticket Rush | Concurrency and robustness | Race conditions, transactions, row locks, deadlocks, idempotency, rate limiting, Redis, retries, load testing (Deep) |
+| 3 | 13–17 | P3 Study Buddy | RAG over my UTM lecture notes | Embeddings, chunking, pgvector, retrieval, streaming (SSE), LLM gateway, prompt injection, evals, cost control (Apply) |
+| 3 | 18–19 | P4 MCP Server | Expose my backend as AI tools | MCP, tool calling, agents (Apply) |
+| 4 | 20–22 | P5 Automation | n8n wired to my APIs | Webhooks, HMAC signatures, cron, event-driven design, queues (Apply) |
+| 4 | 23–26 | P6 Capstone | Combine and ship one product | CI/CD, observability, deployment, ADRs, docs (Apply); security review (Deep) |
+| 4 | 27–28 | Solo hackathon test | Blank repo → deployed app | Everything, under time pressure |
 
-| Topic | Resource | Use on |
+If I fall behind: cut P4 down to one tool, and shrink P5 to a single workflow. **Never cut** P2's break-and-fix work, security review or deployment.
+
+---
+
+## Project details
+
+### P0 — Warm-up (Days 1–2)
+
+**Goal:** a working toolchain, plus enough web fundamentals to read what Claude Code produces.
+
+- Day 1: read `Day1_Notes_How_The_Web_Works.pdf` and watch the Day 1 videos. Hit the GitHub API with `curl -v` and read every header.
+- Day 2: set up Claude Code in the repo and write the first `CLAUDE.md` (see template below). Vibe code a FastAPI "hello" API with two endpoints, run it, and explore `/docs`.
+
+**Done when:** I can explain a raw HTTP request/response line by line, and Claude Code follows my `CLAUDE.md` rules.
+
+### P1 — Hackathon Starter Kit (Days 3–7)
+
+**Goal:** a template I can copy at any hackathon to get auth + database + Docker + tests running in under 30 minutes.
+
+**Spec seeds:** users sign up and log in; a generic `items` resource with owner-only CRUD, pagination and search; health-check endpoint; one-command start with `docker compose up`.
+
+**Must include:** routers/schemas/services layout, Alembic migrations, JWT auth with hashed passwords, consistent error JSON, config via environment variables, 15+ tests.
+
+**Break it:**
+
+- Log in as user B and try to read user A's items.
+- Send oversized and malformed input.
+- Kill the DB mid-request.
+
+**Done when:** a fresh clone runs with one command, all tests pass, and I can draw the request flow (client → router → auth dependency → service → ORM → Postgres) from memory.
+
+### P2 — Ticket Rush (Days 8–12) · *the Deep week*
+
+**Goal:** a concert-ticket API where 100 seats go on sale and 1,000 users hit "buy" at the same second. No overselling, no double charging, no deadlocks.
+
+**Steps:**
+
+1. Let Claude Code build the naive version first.
+2. Write a Locust load test and **watch it oversell**.
+3. Fix it, and compare three approaches: atomic update, `SELECT … FOR UPDATE`, and optimistic locking with a version column.
+4. Cause a deadlock on purpose (two transactions locking rows in opposite order), read the Postgres error, then fix it with consistent lock ordering and timeouts.
+5. Add idempotency keys so a retried "buy" request doesn't charge twice.
+6. Add a Redis rate limit per user and a background job that sends a confirmation (logged).
+
+**Done when:** the load test shows 0 oversells, I can explain why each fix works, and concept cards exist for race conditions, deadlocks, isolation levels and idempotency.
+
+### P3 — Study Buddy RAG (Days 13–17)
+
+**Goal:** an API that answers questions about my own UTM lecture notes and cites the source page.
+
+**Steps:**
+
+1. Ingest PDFs: chunk the text, embed it, and store it in pgvector.
+2. On a question: retrieve the top-k chunks, build the prompt, call the LLM, and stream the answer over SSE.
+3. Put the LLM behind one interface, so Gemini, Ollama and Claude are swappable.
+4. Cache repeated questions in Redis and track tokens and cost per request.
+
+**Break it:**
+
+- Prompt injection through a malicious uploaded document.
+- Questions with no answer in the notes (it should say "not found", not hallucinate).
+- A 10-question eval set I score before and after changing the chunk size.
+
+**Done when:** answers cite sources, the eval score is recorded, and an injection attempt is blocked or flagged.
+
+### P4 — MCP Server (Days 18–19)
+
+**Goal:** expose Study Buddy (and/or Ticket Rush) as tools that Claude Desktop or Claude Code can call, using the MCP Python SDK.
+
+**Tools:** `search_notes(query)` and `get_ticket_status(id)`, with read-only defaults and clear tool descriptions.
+
+**Done when:** I can ask Claude a question and watch it call my tool, and I can explain how MCP differs from a normal REST API and from plain function calling.
+
+### P5 — n8n Automation (Days 20–22)
+
+**Goal:** n8n (in Docker) orchestrating my APIs without me writing glue code.
+
+**Workflows:**
+
+- A daily cron that asks Study Buddy for a "3 things to revise today" digest and sends it to Telegram or email.
+- A webhook from Ticket Rush ("sold out") that triggers a notification.
+
+**Must include:** HMAC-signed webhooks verified in FastAPI, idempotent webhook handling, and retries.
+
+**Done when:** both workflows run unattended for 24 hours, and I can say when n8n is the right tool and when I'd write a background job in code instead.
+
+### P6 — Capstone and Ship (Days 23–26)
+
+**Goal:** combine the pieces into one deployed product, e.g. **"Study Buddy Pro"**: auth (from P1), RAG (P3), MCP access (P4) and an n8n daily digest (P5), with rate limits and safe concurrency (P2).
+
+**Must include:**
+
+- GitHub Actions running tests on every push; a failing test blocks deploy.
+- Deployment to Render with managed Postgres.
+- Sentry plus structured logs.
+- A `/health` endpoint.
+- A README covering the seven lenses.
+- Two or three architecture decision records (ADRs): short notes on *why* I chose X over Y.
+
+**Final step:** a security review session, covering the OWASP API Top 10 checklist plus Claude's review, with fixes made by me.
+
+### Solo Hackathon Test (Days 27–28)
+
+Starting from my P1 starter kit, build a brand-new small product (e.g. a URL shortener with click analytics, or a hackathon-style idea) from spec to a deployed URL across two sessions (~7 h total). Then do the self-assessment below.
+
+---
+
+## Concept radar
+
+Everything below should at least be **Aware** by the end. Items tagged with a project get applied there; the rest get one concept card each, written when they come up (a few per week).
+
+| Area | Concepts | Where |
 | --- | --- | --- |
-| HTTP | [MDN: An overview of HTTP](https://developer.mozilla.org/en-US/docs/Web/HTTP/Overview) | Day 1 |
-| Git | [Pro Git book, ch. 1–3](https://git-scm.com/book/en/v2) | Day 1 |
-| FastAPI | [FastAPI Tutorial – User Guide](https://fastapi.tiangolo.com/tutorial/) | Days 2–6 |
-| SQL practice | [SQLBolt](https://sqlbolt.com/) and [PostgreSQL Exercises](https://pgexercises.com/) | Day 4 |
-| ORM | [SQLAlchemy 2.0 Unified Tutorial](https://docs.sqlalchemy.org/en/20/tutorial/) | Day 5 |
-| Migrations | [Alembic tutorial](https://alembic.sqlalchemy.org/en/latest/tutorial.html) | Day 5 |
-| Testing | [pytest docs: Get started](https://docs.pytest.org/en/stable/getting-started.html) | Day 7 |
-| Docker | [Docker: Get started](https://docs.docker.com/get-started/) | Days 4, 9, 13 |
-| Security | [OWASP API Security Top 10](https://owasp.org/API-Security/) | Day 12 |
-| CI | [GitHub Actions: Building and testing Python](https://docs.github.com/en/actions/use-cases-and-examples/building-and-testing/building-and-testing-python) | Day 13 |
-| System design | [System Design Primer](https://github.com/donnemartin/system-design-primer) | Day 8, later |
+| AI integration | RAG, embeddings, vector DBs (pgvector, Pinecone, Qdrant), chunking, rerankers | P3 |
+| | MCP, tool/function calling, agents, agent frameworks (LangGraph, Claude Agent SDK) | P4 |
+| | Streaming (SSE), LLM gateways (LiteLLM, OpenRouter), prompt caching, evals, guardrails, prompt injection | P3 |
+| | Fine-tuning vs RAG vs prompting, structured outputs, multimodal inputs | Aware |
+| Automation | n8n, webhooks, cron, event-driven design | P5 |
+| | Zapier/Make, Temporal (durable workflows), message brokers (RabbitMQ, Kafka) | Aware |
+| API styles | REST, OpenAPI | P0–P1 |
+| | WebSockets, SSE | P3 |
+| | GraphQL, gRPC, tRPC | Aware |
+| Data | Postgres, ORMs, migrations, indexes, normalization | P1 |
+| | Redis caching | P2–P3 |
+| | NoSQL (MongoDB, DynamoDB), object storage (S3/R2), BaaS (Supabase, Firebase), read replicas, sharding | Aware |
+| Concurrency | Race conditions, transactions, isolation levels, row locks, optimistic locking, deadlocks, idempotency keys, rate limiting, async/await | P2 (Deep) |
+| | Distributed locks, sagas, exactly-once delivery myths, backpressure | Aware |
+| Architecture | Layered/clean architecture, monolith | P1 |
+| | Microservices, serverless, API gateway, CQRS, event sourcing, BFF | Aware |
+| Robustness | Validation, error handling, retries with backoff, timeouts | P1–P2 |
+| | Circuit breakers, graceful degradation, health checks | P6 |
+| | Observability (logs, metrics, traces; OpenTelemetry) | P6 |
+| Security | Password hashing, JWT, CORS, secrets in env, OWASP API Top 10 | P1, P6 (Deep) |
+| | OAuth2/OIDC, managed auth (Clerk, Auth0, Supabase Auth), API keys, HMAC signatures, RBAC | P5 / Aware |
+| Ship and run | Docker, Docker Compose, GitHub Actions, Render | P1, P6 |
+| | Kubernetes, Terraform/IaC, CDNs, feature flags, blue-green deploys | Aware |
+| Maintainability | Project structure, type hints, linting (Ruff), tests, ADRs, conventional commits | All |
+| Requirements | PRD/spec, user stories, functional vs non-functional requirements, ERDs, non-goals | Every SPEC.md |
 
-## After the 2 weeks
+### Concept card template (`concepts/<name>.md`)
 
-Competence comes from the next 2–3 months of building, not from the 14 days. Build one new backend every 2–3 weeks, each adding one new skill:
+```markdown
+# <Concept>
+**Level:** Aware | Apply | Deep
+**One-liner:** what it is, in one sentence.
+**Problem it solves:** …
+**Use it when:** …  **Don't use it when:** …
+**Alternatives:** …
+**How I'd ask Claude Code for it:** a prompt I'd actually use
+**Red flags in AI-generated code:** …
+**Where I used it:** project + file link (if Apply/Deep)
+```
 
-1. **Weeks 3–5:** backend for your next hackathon or a real use (e.g. a Kuching bus-route API) — practise designing under time pressure
-2. **Weeks 6–8:** serve one of your own ML models behind FastAPI with a job queue (Celery or RQ) — connects directly to your AI degree
-3. **Weeks 9–12:** learn a second backend language (Node/TypeScript or Go) by rebuilding the capstone; you will notice the concepts are identical
+---
 
-Along the way, read *Designing Data-Intensive Applications* (Kleppmann) one chapter a week — it's the book that turns API builders into backend engineers.
+## Working with Claude Code
+
+### Starter `CLAUDE.md` (create in P0, refine as I go)
+
+```markdown
+# Rules for this repo
+- I am learning backend engineering. Explain non-obvious design choices in 1–2 lines.
+- Before writing code for a new feature, propose a plan and wait for my approval.
+- Work in small steps; each step must leave the app runnable and tests passing.
+- Stack: Python 3.12, FastAPI, Pydantic v2, SQLAlchemy 2.0, Alembic, pytest.
+- Never hard-code secrets; read config from environment variables.
+- Every endpoint that changes data must check ownership/permissions.
+- Use parameterized queries only. Use transactions for multi-step writes.
+- Add or update tests with every feature.
+- When touching concurrency, say explicitly what happens under simultaneous requests.
+```
+
+### Prompts I reuse
+
+- **Plan:** "Here is SPEC.md. Propose an architecture and a step-by-step build plan. List risks against the seven lenses. Don't write code yet."
+- **Build:** "Implement step N only. Add tests. Tell me what to run to verify it."
+- **Review:** "Review this diff as a senior backend engineer. Check security, concurrency, error handling and maintainability. Rank issues by severity."
+- **Teach:** "Explain why this code needs a transaction here, with a timeline of two concurrent requests."
+- **Concept card:** "I just used X. Ask me 3 questions to check I understand it, then help me draft concepts/x.md."
+
+### Red flags to check in every AI-generated change
+
+- SQL built with f-strings, or missing ownership checks on update/delete
+- Read-then-write without a transaction or lock (race condition)
+- Locks taken in inconsistent order, or no timeouts (deadlock risk)
+- No timeout or retry limit on external calls (LLM, APIs)
+- Secrets in code, stack traces in API responses, unbounded inputs or page sizes
+- LLM output trusted blindly (executed, or written to the DB without validation)
+- Code I cannot explain line by line
+
+---
+
+## Session routine (~3.5 h)
+
+| Block | Time | What |
+| --- | --- | --- |
+| Recall | 10 min | Explain yesterday's concept out loud without notes |
+| Spec / plan | 30 min | Update SPEC.md, run plan mode, decide |
+| Vibe code | 1 h 45 min | Claude Code builds in small, committed slices |
+| Break and review | 45 min | Tests, attack scenarios, Claude review, my fixes |
+| Card and log | 10 min | Concept card + 3 lines in LOG.md, push |
+
+---
+
+## Weekly checkpoints
+
+- **End of Week 1:** the starter kit runs with one command; I can draw the request flow and data model from memory.
+- **End of Week 2:** I can explain, with a timeline, how overselling and deadlocks happen and the fix for each.
+- **End of Week 3:** my RAG API cites sources and has an eval score; Claude can call my MCP tool.
+- **End of Week 4:** a deployed capstone, two n8n workflows running, and the solo hackathon test completed.
+
+## Final self-assessment
+
+Eight or more ticks means I can build a backend on my own with AI:
+
+- [ ] I can write a SPEC.md with requirements, constraints and non-goals in 20 minutes
+- [ ] I can sketch an architecture and defend it against one alternative
+- [ ] I can spot a race condition or missing ownership check in AI-generated code
+- [ ] I can explain how a deadlock happens and two ways to prevent it
+- [ ] I can make an endpoint idempotent and say why it matters
+- [ ] I can build a RAG pipeline and explain each step
+- [ ] I can expose a backend to an AI agent through MCP
+- [ ] I can automate a workflow with n8n + webhooks and say when not to use n8n
+- [ ] I can deploy with CI, logs and a health check
+- [ ] I have 20+ concept cards and can explain any one of them in 60 seconds
+- [ ] I went from blank repo to deployed app in the solo hackathon test
+
+## After the 4 weeks
+
+- Use the starter kit at the next hackathon and log what slowed me down.
+- Add one Aware concept per week to Apply, in a small side project.
+- Read *Designing Data-Intensive Applications* (Kleppmann), one chapter a week.
